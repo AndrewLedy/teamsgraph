@@ -9,6 +9,7 @@ require('isomorphic-fetch');
 
 //GET POST
 
+
 router.get('/',async (req,res)=>{
     // here we get an access token
     const authResponse = await auth.getToken(auth.tokenRequest);
