@@ -7,18 +7,58 @@ const {TokenCredentialAuthenticationProvider} = require("@microsoft/microsoft-gr
 const {UsernamePasswordCredential} = require("@azure/identity");
 require('isomorphic-fetch');
 
-//GET POST
+require('rxjs/operators');
 
+//GET POST
+var msUsers;
+var changed = false;
 
 router.get('/',async (req,res)=>{
     // here we get an access token
+    if(!changed)
+    {
     const authResponse = await auth.getToken(auth.tokenRequest);
 
     var users = await getUsers(authResponse);
-    var msUsers=await getPresence(users,authResponse);
+    this.msUsers=await getPresence(users,authResponse);
     // display result
     //return msUsers;
-    res.send(msUsers);
+    res.status(200).json(this.msUsers);
+    }
+    else{
+        res.status(200).json(this.msUsers);
+    }
+});
+
+router.post('/myNotifyClient',(req,res)=>{
+    if(req.query && req.query.validationToken) {
+        res.set('Content-Type','application/json');
+        //res.set('Content-Type','text/plain');
+        res.send(req.query.validationToken);
+        return;
+    }
+    if(!req.body) return res.sendStatus(400);
+    //console.log(req.body);
+    res.status(200).send(req.body.value); //has presence updated value
+    
+    //new work//
+    if(req.body.value != null)
+    {
+            console.log(req.body.value);
+            console.log(req.body.value[0].resourceData.id);
+            let recIndex=this.msUsers.findIndex(r=>r.id==req.body.value[0].resourceData.id)
+            console.log(recIndex);
+            if(recIndex != -1)
+            {
+                this.msUsers[recIndex].availability=req.body.value[0].resourceData.availability;
+                console.log(this.msUsers);
+                changed = true;
+            }
+            else{
+                changed = false;
+            }
+    }
+    //end new work//
 });
 
 async function getUsers(token)
@@ -89,21 +129,20 @@ async function createSubscription(ids)
     
     const subscription = {
        changeType: "updated",
-       notificationUrl:  "https://530e-59-91-154-103.ngrok.io/myNotifyClient",
+       notificationUrl:  "https://c262-59-92-83-250.ngrok.io/posts/myNotifyClient",
        resource: "/communications/presences?$filter=id in ('50a252ce-3dbc-4b40-9e7a-36680ddfd5a3')",
        expirationDateTime: new Date().addHours(1),
        //includeResourceData: true,
        clientState: "secretClientValue",
     };
     
-    let subscriptions = await client.api('/subscriptions')
-	.get();
+    let subscriptions = await client.api('/subscriptions').get();
 
-
-    console.log(subscriptions.value[0].id);
-
-
-    await client.api('/subscriptions/'+subscriptions.value[0].id).delete();
+    if(subscriptions.value[0]!=null)
+    {
+        console.log(subscriptions.value[0].id);
+        await client.api('/subscriptions/'+subscriptions.value[0].id).delete();
+    }
 
     await client.api('/subscriptions')
         .post(subscription);
