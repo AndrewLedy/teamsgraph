@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { delay } from 'rxjs/operator/delay';
 import { UsersService } from './users.service';
+import {MatIconModule} from '@angular/material/icon';
 
 @Component({
   selector: 'app-root',

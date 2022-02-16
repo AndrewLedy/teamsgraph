@@ -4,6 +4,7 @@
       <!--<th scope="col">User Id</th>-->
       <th scope="col">Name</th>
       <th scope="col">Email</th>
+      <th scope="col">Action</th>
       <th scope="col">Presence</th>
     </tr>
   </thead>
@@ -12,6 +13,11 @@
       <!--<th>{{user.id}}</th>-->
       <td>{{user.displayName}}</td>
       <td>{{user.email}}</td>
+      <td>
+        <a target="blank" href="{{'https://teams.microsoft.com/l/chat/0/0?users=subashandrew@zb136.onmicrosoft.com,'+user.email}}"><span class="material-icons">chat</span></a>
+        <a target="blank" href="{{'https://teams.microsoft.com/l/call/0/0?withVideo=true&users=subashandrew@zb136.onmicrosoft.com,'+user.email}}"><span class="material-icons">video_call</span></a>
+        <a target="blank" href="{{'https://teams.microsoft.com/l/call/0/0?users=subashandrew@zb136.onmicrosoft.com,'+user.email}}"><span class="material-icons">call</span></a>
+      </td>
       <td>{{user.availability}}</td>
     </tr>
   </tbody>
