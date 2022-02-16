@@ -15,7 +15,7 @@ var changed = false;
 
 router.get('/',async (req,res)=>{
     // here we get an access token
-    if(!changed)
+    if(changed!=true)
     {
     const authResponse = await auth.getToken(auth.tokenRequest);
 
