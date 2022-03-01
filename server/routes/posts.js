@@ -10,22 +10,21 @@ require('isomorphic-fetch');
 require('rxjs/operators');
 
 //GET POST
-var msUsers;
 var changed = false;
 
 router.get('/',async (req,res)=>{
     // here we get an access token
-    if(changed!=true)
+    if(changed)
     {
-    const authResponse = await auth.getToken(auth.tokenRequest);
-
-    var users = await getUsers(authResponse);
-    this.msUsers=await getPresence(users,authResponse);
-    // display result
-    //return msUsers;
-    res.status(200).json(this.msUsers);
+        res.status(200).json(this.msUsers);
     }
     else{
+        changed=false;
+        const authResponse = await auth.getToken(auth.tokenRequest);
+        var users = await getUsers(authResponse);
+        //var profileUsers = await getProfilePicture(users,authResponse);
+        //this.msUsers=await getPresence(profileUsers,authResponse);
+        this.msUsers=await getPresence(users,authResponse);
         res.status(200).json(this.msUsers);
     }
 });
@@ -33,32 +32,24 @@ router.get('/',async (req,res)=>{
 router.post('/myNotifyClient',(req,res)=>{
     if(req.query && req.query.validationToken) {
         res.set('Content-Type','application/json');
-        //res.set('Content-Type','text/plain');
         res.send(req.query.validationToken);
         return;
     }
     if(!req.body) return res.sendStatus(400);
-    //console.log(req.body);
     res.status(200).send(req.body.value); //has presence updated value
-    
-    //new work//
-    if(req.body.value != null)
-    {
-            console.log(req.body.value);
-            console.log(req.body.value[0].resourceData.id);
+        //console.log(req.body.value);
+        if(req.body.value != null)
+        {
             let recIndex=this.msUsers.findIndex(r=>r.id==req.body.value[0].resourceData.id)
-            console.log(recIndex);
             if(recIndex != -1)
             {
                 this.msUsers[recIndex].availability=req.body.value[0].resourceData.availability;
-                console.log(this.msUsers);
                 changed = true;
             }
             else{
                 changed = false;
             }
     }
-    //end new work//
 });
 
 async function getUsers(token)
@@ -77,16 +68,54 @@ async function getPresence(users,token)
             var msUser = new MsUser();
             msUser.id=user.id;
             msUser.email=user.mail;
+            msUser.displayName=user.displayName;
             url = auth.uriConfig.presence.replace('{0}',user.id)
             var presence = await callApi(url,token);
             msUser.availability=presence.availability;
-            msUser.displayName = user.displayName;
+            //msUser.url = user.url;
             MsUsers.push(msUser);
-            ids.push(user.id);
+            ids.push("'"+user.id+"'");
         }
+        //console.log(ids.join(','));
         await createSubscription(ids.join(','));
     return MsUsers;
 }
+
+async function getProfilePicture(users,token)
+{
+    var profileUsers=new Array();
+        var i=1;
+        for(const user of users.value)
+        {
+            var msUser = new MsUser();
+            msUser.id=user.id;
+            msUser.email=user.mail;
+            msUser.displayName=user.displayName;
+            url = auth.uriConfig.profile.replace('{0}',user.id)
+            var profile = await callApi(url,token);
+            //profile.replace(/^data:image\/\w+;base64,/, '');
+            const avatar = new Buffer.from(profile, 'binary').toString('base64');
+            var img = 'data:image/png;base64,' + avatar;
+            msUser.url=decodeBase64Image(img);
+            profileUsers.push(msUser);            
+            //ids.push(user.id);
+        }
+    return profileUsers;
+}
+
+function decodeBase64Image(dataString) {
+    var matches = dataString.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
+      response = {};
+  
+    if (matches.length !== 3) {
+      return new Error('Invalid input string');
+    }
+  
+    response.type = matches[1];
+    response.data = new Buffer(matches[2], 'base64');
+  
+    return response;
+  }
 
 async function callApi(endpoint, accessToken) {
 
@@ -96,13 +125,10 @@ async function callApi(endpoint, accessToken) {
         }
     };
 
-    console.log('request made to web API at: ' + new Date().toString());
-
     try {
         const response = await axios.default.get(endpoint, options);
         return response.data;
     } catch (error) {
-        console.log(error)
         return error;
     }
 };
@@ -118,19 +144,16 @@ async function createSubscription(ids)
     const client = Client.initWithMiddleware({
         debugLogging: true,
         authProvider
-        // Use the authProvider object to create the class.
     });
 
     const options = {
         authProvider,
     };
-    
-    //const client = Client.init(options);
-    
+     
     const subscription = {
        changeType: "updated",
-       notificationUrl:  "https://c262-59-92-83-250.ngrok.io/posts/myNotifyClient",
-       resource: "/communications/presences?$filter=id in ('50a252ce-3dbc-4b40-9e7a-36680ddfd5a3')",
+       notificationUrl:  "https://9cea-2405-201-e010-f807-95ac-9589-a6ae-c1de.ngrok.io/posts/myNotifyClient",
+       resource: "/communications/presences?$filter=id in ("+ids+")",
        expirationDateTime: new Date().addHours(1),
        //includeResourceData: true,
        clientState: "secretClientValue",
@@ -140,7 +163,6 @@ async function createSubscription(ids)
 
     if(subscriptions.value[0]!=null)
     {
-        console.log(subscriptions.value[0].id);
         await client.api('/subscriptions/'+subscriptions.value[0].id).delete();
     }
 
@@ -155,11 +177,13 @@ Date.prototype.addHours = function(h) {
   }
 
 class MsUser {
-    constructor(email, id,availability,displayName) {
+    constructor(email, id,availability,displayName,url) {
       this.email = email;
       this.displayName=displayName;
       this.id=id;
       this.availability=availability;
+      this.allowMessage=false;
+      this.url=url;
     }
   }
 

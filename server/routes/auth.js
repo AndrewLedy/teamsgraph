@@ -25,7 +25,8 @@ const tokenRequest = {
 
 const uriConfig = {
     users: 'https://graph.microsoft.com/v1.0/users',
-    presence: 'https://graph.microsoft.com/v1.0/users/{0}/presence'
+    presence: 'https://graph.microsoft.com/v1.0/users/{0}/presence',
+    profile:'https://graph.microsoft.com/v1.0/users/{0}/photo/$value'
 };
 
 

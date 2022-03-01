@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { delay } from 'rxjs/operator/delay';
 import { UsersService } from './users.service';
-import {MatIconModule} from '@angular/material/icon';
+
 
 @Component({
   selector: 'app-root',
@@ -9,19 +9,25 @@ import {MatIconModule} from '@angular/material/icon';
   styleUrls: ['./app.component.css'],
   providers: [UsersService]
 })
-export class AppComponent {
+export class AppComponent implements OnInit{
 
   users: any =[];
-constructor(private userService:UsersService) {
+  public msg:string;
+  constructor(private userService:UsersService) {
   
 }
 
 ngOnInit(){
-setInterval(()=>{
-  this.userService.getAllUsers().subscribe(users=>{
-    this.users=users;
-    console.log(users)
-});
-},60000);
+  setInterval(()=>{
+    this.userService.getAllUsers().subscribe(users=>{
+      this.users=users;
+      console.log(users)
+  });
+  },10000);
+}
+onKeypressEvent(event: any)
+{
+  this.msg=event.target.value;
+  console.log(event.target.value);
 }
 }
